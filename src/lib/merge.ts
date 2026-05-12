@@ -8,7 +8,7 @@ export function injectTracking(html: string, recipientId: string, baseUrl: strin
   const withClicks = html.replace(
     /href="(https?:\/\/[^"]+)"/g,
     (_, encodedUrl) => {
-      const url = encodedUrl.replace(/&amp;/gi, '&')
+      const url = encodedUrl.replace(/&amp;/gi, '&').trim().replace(/[\x00-\x1F\x7F]/g, '')
       return `href="${baseUrl}/api/track/click?rid=${recipientId}&url=${encodeURIComponent(url)}"`
     }
   )

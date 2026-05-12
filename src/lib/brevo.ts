@@ -16,7 +16,11 @@ export async function sendEmail(payload: {
       'Content-Type': 'application/json',
       Accept: 'application/json',
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      ...payload,
+      // Disable Brevo's own link/open tracking — we inject our own
+      headers: { 'X-Mailin-Track': 'no' },
+    }),
   })
   if (!res.ok) throw new Error(`Brevo ${res.status}: ${await res.text()}`)
   return res.json()

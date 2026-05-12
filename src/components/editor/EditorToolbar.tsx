@@ -90,7 +90,7 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
       <Btn active={editor.isActive({ textAlign: 'right' })} onClick={() => editor.chain().focus().setTextAlign('right').run()} title="Align right"><AlignRight className="h-3.5 w-3.5" /></Btn>
       <Separator orientation="vertical" className="mx-1 h-5" />
 
-      <Btn active={editor.isActive('link')} onClick={() => { if (editor.isActive('link')) { editor.chain().focus().unsetLink().run() } else { const url = window.prompt('URL:'); if (url) { const href = /^https?:\/\/|^mailto:/i.test(url) ? url : `https://${url}`; editor.chain().focus().setLink({ href }).run() } } }} title="Link"><Link2 className="h-3.5 w-3.5" /></Btn>
+      <Btn active={editor.isActive('link')} onClick={() => { if (editor.isActive('link')) { editor.chain().focus().unsetLink().run() } else { const raw = window.prompt('URL:'); const url = raw?.trim().replace(/[\x00-\x1F\x7F]/g, ''); if (url) { const href = /^https?:\/\/|^mailto:/i.test(url) ? url : `https://${url}`; editor.chain().focus().setLink({ href }).run() } } }} title="Link"><Link2 className="h-3.5 w-3.5" /></Btn>
       <input ref={imageRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="sr-only" onChange={handleImageUpload} />
       <Btn onClick={() => imageRef.current?.click()} title="Insert image" active={false}>
         {uploadingImage ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImageIcon className="h-3.5 w-3.5" />}
