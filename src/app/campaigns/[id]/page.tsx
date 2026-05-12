@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Send, Save, Eye, ArrowLeft, MousePointer, Mail, AlertCircle, Clock } from 'lucide-react'
+import { Send, Save, Eye, ArrowLeft, MousePointer, Mail, AlertCircle, Clock, Paperclip, X, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -13,7 +13,7 @@ import { mergePlaceholders } from '@/lib/merge'
 import Link from 'next/link'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import type { Campaign, CampaignRecipient, EmailEvent, ContactList } from '@/types'
+import type { Campaign, CampaignAttachment, CampaignRecipient, EmailEvent, ContactList } from '@/types'
 
 export default function CampaignDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -26,6 +26,9 @@ export default function CampaignDetailPage() {
   const [sending, setSending] = useState(false)
   const [scheduledAt, setScheduledAt] = useState('')
   const [showSchedule, setShowSchedule] = useState(false)
+  const [showBcc, setShowBcc] = useState(false)
+  const [uploadingFile, setUploadingFile] = useState(false)
+  const attachRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     Promise.all([
@@ -40,10 +43,31 @@ export default function CampaignDetailPage() {
         setScheduledAt(detail.campaign.scheduled_at.slice(0, 16))
         setShowSchedule(true)
       }
+      if (detail.campaign?.bcc_email) {
+        setShowBcc(true)
+      }
     })
   }, [id])
 
   function update(k: string, v: string) { setCampaign(c => c ? { ...c, [k]: v } : c) }
+
+  async function handleAttachFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+    setUploadingFile(true)
+    const form = new FormData()
+    form.append('file', file)
+    const res = await fetch('/api/upload', { method: 'POST', body: form })
+    setUploadingFile(false)
+    if (!res.ok) { toast.error('Upload failed'); return }
+    const attachment: CampaignAttachment = await res.json()
+    setCampaign(c => c ? { ...c, attachments: [...(c.attachments ?? []), attachment] } : c)
+  }
+
+  function removeAttachment(i: number) {
+    setCampaign(c => c ? { ...c, attachments: (c.attachments ?? []).filter((_, j) => j !== i) } : c)
+  }
 
   async function save() {
     if (!campaign) return
@@ -161,6 +185,55 @@ export default function CampaignDetailPage() {
               {showSchedule && <Input type="datetime-local" className="mt-2" value={scheduledAt} onChange={e => setScheduledAt(e.target.value)} />}
             </div>
           )}
+          <div>
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showBcc}
+                onChange={e => {
+                  setShowBcc(e.target.checked)
+                  if (!e.target.checked) update('bcc_email', '')
+                }}
+              />
+              BCC an email address
+            </label>
+            {showBcc && (
+              <Input
+                type="email"
+                className="mt-2"
+                placeholder="bcc@example.com"
+                value={campaign.bcc_email ?? ''}
+                onChange={e => update('bcc_email', e.target.value)}
+              />
+            )}
+          </div>
+
+          {/* Attachments */}
+          <div>
+            <Label>Attachments</Label>
+            <input ref={attachRef} type="file" className="sr-only" onChange={handleAttachFile} />
+            <button
+              type="button"
+              onClick={() => attachRef.current?.click()}
+              disabled={uploadingFile}
+              className="mt-1 w-full flex items-center justify-center gap-2 rounded-lg border border-dashed px-3 py-2 text-xs text-muted-foreground hover:bg-muted/30 transition-colors disabled:opacity-50"
+            >
+              {uploadingFile ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Paperclip className="h-3.5 w-3.5" />}
+              {uploadingFile ? 'Uploading…' : 'Attach a file'}
+            </button>
+            {(campaign.attachments ?? []).length > 0 && (
+              <ul className="mt-2 space-y-1">
+                {(campaign.attachments ?? []).map((a, i) => (
+                  <li key={i} className="flex items-center justify-between gap-2 text-xs rounded-md bg-muted/40 px-2.5 py-1.5">
+                    <span className="truncate">{a.name}</span>
+                    <button type="button" onClick={() => removeAttachment(i)}>
+                      <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
 
         <div className="col-span-2 space-y-3">

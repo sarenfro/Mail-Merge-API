@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { sendEmail } from '@/lib/brevo'
 import { mergePlaceholders, injectTracking } from '@/lib/merge'
-import type { Contact } from '@/types'
+import type { Contact, CampaignAttachment } from '@/types'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -49,6 +49,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const subject = mergePlaceholders(campaign.subject, fields)
     const toName = [contact.first_name, contact.last_name].filter(Boolean).join(' ') || undefined
 
+    const attachments = (campaign.attachments as CampaignAttachment[] | null)
+      ?.map(a => ({ name: a.name, url: a.url }))
+
     try {
       await sendEmail({
         sender: { name: campaign.from_name, email: campaign.from_email },
@@ -56,6 +59,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         subject,
         htmlContent: trackedHtml,
         scheduledAt: scheduledAt ?? undefined,
+        attachment: attachments?.length ? attachments : undefined,
+        bcc: campaign.bcc_email ? [{ email: campaign.bcc_email }] : undefined,
       })
       sent++
     } catch (e) {

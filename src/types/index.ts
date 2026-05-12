@@ -1,3 +1,10 @@
+export interface CampaignAttachment {
+  name: string
+  url: string
+  content_type: string
+  size: number
+}
+
 export interface ContactList {
   id: string
   name: string
@@ -28,6 +35,8 @@ export interface Campaign {
   scheduled_at: string | null
   sent_at: string | null
   total_sent: number
+  attachments: CampaignAttachment[] | null
+  bcc_email: string | null
   created_at: string
 }
 

@@ -9,6 +9,7 @@ import FontFamily from '@tiptap/extension-font-family'
 import Highlight from '@tiptap/extension-highlight'
 import Underline from '@tiptap/extension-underline'
 import TextAlign from '@tiptap/extension-text-align'
+import Image from '@tiptap/extension-image'
 import { EditorToolbar } from './EditorToolbar'
 
 interface Props {
@@ -27,6 +28,7 @@ export function RichTextEditor({ content, onChange }: Props) {
       Highlight.configure({ multicolor: true }),
       Link.configure({ openOnClick: false, HTMLAttributes: { class: 'text-primary underline cursor-pointer' } }),
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      Image.configure({ inline: false, HTMLAttributes: { style: 'max-width:100%;height:auto;' } }),
     ],
     content,
     onUpdate({ editor }) {

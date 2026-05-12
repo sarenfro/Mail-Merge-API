@@ -1,16 +1,16 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Send, Save, Eye, Clock } from 'lucide-react'
+import { Send, Save, Eye, Clock, Paperclip, X, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { RichTextEditor } from '@/components/editor/RichTextEditor'
 import { mergePlaceholders } from '@/lib/merge'
-import type { ContactList } from '@/types'
+import type { ContactList, CampaignAttachment } from '@/types'
 
 export default function NewCampaignPage() {
   const router = useRouter()
@@ -21,8 +21,13 @@ export default function NewCampaignPage() {
   })
   const [scheduledAt, setScheduledAt] = useState('')
   const [showSchedule, setShowSchedule] = useState(false)
+  const [bccEmail, setBccEmail] = useState('')
+  const [showBcc, setShowBcc] = useState(false)
   const [saving, setSaving] = useState(false)
   const [sending, setSending] = useState(false)
+  const [attachments, setAttachments] = useState<CampaignAttachment[]>([])
+  const [uploadingFile, setUploadingFile] = useState(false)
+  const attachRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     fetch('/api/contacts/lists').then(r => r.json()).then(d => setLists(Array.isArray(d) ? d : []))
@@ -30,13 +35,27 @@ export default function NewCampaignPage() {
 
   function set(k: string, v: string) { setForm(f => ({ ...f, [k]: v })) }
 
+  async function handleAttachFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+    setUploadingFile(true)
+    const form = new FormData()
+    form.append('file', file)
+    const res = await fetch('/api/upload', { method: 'POST', body: form })
+    setUploadingFile(false)
+    if (!res.ok) { toast.error('Upload failed'); return }
+    const attachment: CampaignAttachment = await res.json()
+    setAttachments(a => [...a, attachment])
+  }
+
   async function saveDraft() {
     if (!form.name || !form.subject) { toast.error('Name and subject are required'); return }
     setSaving(true)
     const res = await fetch('/api/campaigns', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, attachments, bcc_email: showBcc && bccEmail ? bccEmail : null }),
     })
     setSaving(false)
     if (res.ok) {
@@ -55,7 +74,7 @@ export default function NewCampaignPage() {
     const saveRes = await fetch('/api/campaigns', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, attachments, bcc_email: showBcc && bccEmail ? bccEmail : null }),
     })
     if (!saveRes.ok) { toast.error('Failed to save campaign'); setSending(false); return }
     const campaign = await saveRes.json()
@@ -135,6 +154,48 @@ export default function NewCampaignPage() {
                 value={scheduledAt}
                 onChange={e => setScheduledAt(e.target.value)}
               />
+            )}
+          </div>
+          <div>
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" checked={showBcc} onChange={e => setShowBcc(e.target.checked)} />
+              BCC an email address
+            </label>
+            {showBcc && (
+              <Input
+                type="email"
+                className="mt-2"
+                placeholder="bcc@example.com"
+                value={bccEmail}
+                onChange={e => setBccEmail(e.target.value)}
+              />
+            )}
+          </div>
+
+          {/* Attachments */}
+          <div>
+            <Label>Attachments</Label>
+            <input ref={attachRef} type="file" className="sr-only" onChange={handleAttachFile} />
+            <button
+              type="button"
+              onClick={() => attachRef.current?.click()}
+              disabled={uploadingFile}
+              className="mt-1 w-full flex items-center justify-center gap-2 rounded-lg border border-dashed px-3 py-2 text-xs text-muted-foreground hover:bg-muted/30 transition-colors disabled:opacity-50"
+            >
+              {uploadingFile ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Paperclip className="h-3.5 w-3.5" />}
+              {uploadingFile ? 'Uploading…' : 'Attach a file'}
+            </button>
+            {attachments.length > 0 && (
+              <ul className="mt-2 space-y-1">
+                {attachments.map((a, i) => (
+                  <li key={i} className="flex items-center justify-between gap-2 text-xs rounded-md bg-muted/40 px-2.5 py-1.5">
+                    <span className="truncate">{a.name}</span>
+                    <button type="button" onClick={() => setAttachments(prev => prev.filter((_, j) => j !== i))}>
+                      <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
         </div>

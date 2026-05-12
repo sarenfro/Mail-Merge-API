@@ -1,10 +1,10 @@
 'use client'
 
 import type { Editor } from '@tiptap/react'
-import { Bold, Italic, Underline, Strikethrough, Link2, AlignLeft, AlignCenter, AlignRight, List, ListOrdered, Undo, Redo, Highlighter } from 'lucide-react'
+import { Bold, Italic, Underline, Strikethrough, Link2, AlignLeft, AlignCenter, AlignRight, List, ListOrdered, Undo, Redo, Highlighter, ImageIcon, Loader2 } from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 
 const FONTS = ['Default', 'Arial', 'Georgia', 'Verdana', 'Times New Roman', 'Courier New']
 const SIZES = ['12px', '14px', '16px', '18px', '20px', '24px', '28px', '32px']
@@ -29,7 +29,23 @@ function Btn({ active, onClick, title, children }: { active?: boolean; onClick: 
 export function EditorToolbar({ editor }: { editor: Editor | null }) {
   const textColorRef = useRef<HTMLInputElement>(null)
   const highlightRef = useRef<HTMLInputElement>(null)
+  const imageRef = useRef<HTMLInputElement>(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
   if (!editor) return null
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+    setUploadingImage(true)
+    const form = new FormData()
+    form.append('file', file)
+    const res = await fetch('/api/upload', { method: 'POST', body: form })
+    setUploadingImage(false)
+    if (!res.ok) return
+    const { url } = await res.json()
+    editor?.chain().focus().setImage({ src: url }).run()
+  }
 
   return (
     <div className="flex flex-wrap items-center gap-0.5 p-2 border-b bg-muted/30">
@@ -75,6 +91,10 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
       <Separator orientation="vertical" className="mx-1 h-5" />
 
       <Btn active={editor.isActive('link')} onClick={() => { if (editor.isActive('link')) { editor.chain().focus().unsetLink().run() } else { const url = window.prompt('URL:'); if (url) editor.chain().focus().setLink({ href: url }).run() } }} title="Link"><Link2 className="h-3.5 w-3.5" /></Btn>
+      <input ref={imageRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="sr-only" onChange={handleImageUpload} />
+      <Btn onClick={() => imageRef.current?.click()} title="Insert image" active={false}>
+        {uploadingImage ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImageIcon className="h-3.5 w-3.5" />}
+      </Btn>
       <Separator orientation="vertical" className="mx-1 h-5" />
 
       <select

@@ -6,6 +6,8 @@ export async function sendEmail(payload: {
   subject: string
   htmlContent: string
   scheduledAt?: string
+  attachment?: { name: string; url: string }[]
+  bcc?: { email: string }[]
 }) {
   const res = await fetch(API, {
     method: 'POST',

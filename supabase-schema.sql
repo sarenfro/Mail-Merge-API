@@ -1,4 +1,5 @@
 -- Run this in Supabase SQL Editor
+-- Also create a public Storage bucket named "email-assets" in Supabase Dashboard → Storage
 
 create table contact_lists (
   id uuid primary key default gen_random_uuid(),
@@ -30,8 +31,14 @@ create table campaigns (
   scheduled_at timestamptz,
   sent_at timestamptz,
   total_sent int default 0,
+  attachments jsonb default '[]',
+  bcc_email text,
   created_at timestamptz default now()
 );
+
+-- If upgrading an existing database, run these instead:
+-- alter table campaigns add column if not exists attachments jsonb default '[]';
+-- alter table campaigns add column if not exists bcc_email text;
 
 create table campaign_recipients (
   id uuid primary key default gen_random_uuid(),
