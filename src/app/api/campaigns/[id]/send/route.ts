@@ -22,7 +22,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (lErr) return NextResponse.json({ error: lErr.message }, { status: 500 })
   if (!contacts?.length) return NextResponse.json({ error: 'No contacts in list' }, { status: 400 })
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+  const proto = req.headers.get('x-forwarded-proto') ?? 'https'
+  const host = req.headers.get('host') ?? 'localhost:3000'
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? `${proto}://${host}`
   let sent = 0
   const errors: string[] = []
 

@@ -7,8 +7,10 @@ export function injectTracking(html: string, recipientId: string, baseUrl: strin
   // Rewrite links for click tracking
   const withClicks = html.replace(
     /href="(https?:\/\/[^"]+)"/g,
-    (_, url) =>
-      `href="${baseUrl}/api/track/click?rid=${recipientId}&amp;url=${encodeURIComponent(url)}"`
+    (_, encodedUrl) => {
+      const url = encodedUrl.replace(/&amp;/gi, '&')
+      return `href="${baseUrl}/api/track/click?rid=${recipientId}&url=${encodeURIComponent(url)}"`
+    }
   )
   // Append open tracking pixel
   return withClicks + `<img src="${baseUrl}/api/track/open?rid=${recipientId}" width="1" height="1" style="display:none" alt="">`

@@ -6,7 +6,11 @@ export async function GET(req: NextRequest) {
   const rid = searchParams.get('rid')
   const url = searchParams.get('url')
 
-  if (rid && url) {
+  if (!url || !/^https?:\/\//i.test(url)) {
+    return new NextResponse('Invalid redirect', { status: 400 })
+  }
+
+  if (rid) {
     const { data: recipient } = await supabase
       .from('campaign_recipients')
       .select('campaign_id, email')
@@ -24,5 +28,5 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.redirect(url ?? '/', { status: 302 })
+  return NextResponse.redirect(url, { status: 302 })
 }
