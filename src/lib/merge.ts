@@ -9,7 +9,8 @@ export function injectTracking(html: string, recipientId: string, baseUrl: strin
     /href="(https?:\/\/[^"]+)"/g,
     (_, encodedUrl) => {
       const url = encodedUrl.replace(/&amp;/gi, '&').trim().replace(/[\x00-\x1F\x7F]/g, '')
-      return `href="${baseUrl}/api/track/click?rid=${recipientId}&url=${encodeURIComponent(url)}"`
+      // clicktracking="off" tells Brevo not to double-wrap this link with their own tracker
+      return `href="${baseUrl}/api/track/click?rid=${recipientId}&url=${encodeURIComponent(url)}" clicktracking="off"`
     }
   )
   // Append open tracking pixel
