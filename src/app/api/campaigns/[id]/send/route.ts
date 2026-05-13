@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
-import { sendEmail } from '@/lib/brevo'
+import { sendEmail } from '@/lib/email'
 import { mergePlaceholders, injectTracking } from '@/lib/merge'
 import type { Contact, CampaignAttachment } from '@/types'
 

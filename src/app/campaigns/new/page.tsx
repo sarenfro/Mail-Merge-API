@@ -127,7 +127,7 @@ export default function NewCampaignPage() {
           <div>
             <Label>From email *</Label>
             <Input type="email" placeholder="you@uw.edu" value={form.from_email} onChange={e => set('from_email', e.target.value)} />
-            <p className="text-xs text-muted-foreground mt-1">Must be verified in Brevo.</p>
+            <p className="text-xs text-muted-foreground mt-1">Must be verified in SendGrid.</p>
           </div>
           <div>
             <Label>Contact list *</Label>
